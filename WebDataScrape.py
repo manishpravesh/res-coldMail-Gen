@@ -4,7 +4,7 @@ os.environ['USER_AGENT'] = 'myagent'
 llm = ChatGroq(
     model="deepseek-r1-distill-llama-70b",
     groq_api_key='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'
-    # other params...
+    
 )
 url = "https://www.google.com/about/careers/applications/jobs/results/93855920110346950-senior-software-engineer-aiml-genai-google-cloud-ai"
 from langchain_community.document_loaders import WebBaseLoader
