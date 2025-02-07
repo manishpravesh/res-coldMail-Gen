@@ -1,6 +1,6 @@
 import os
 import json
-from langchain.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyPDFLoader
 from langchain.prompts import PromptTemplate
 from langchain_groq import ChatGroq  # Assuming this is a valid LLM (or use any other LLM of choice)
 
@@ -26,7 +26,7 @@ llm = ChatGroq(
 # Define the updated prompt template for extracting detailed work experience information
 res_embed_tojson_template = PromptTemplate.from_template(
     """
-    ### RESUME DATA:
+    ### RESUME DATA:~
     {resume_text}
     
     ### INSTRUCTIONS:
@@ -81,5 +81,10 @@ res_embed_tojson_template = PromptTemplate.from_template(
 # Generate response from LLM (use it to extract detailed work experience information)
 response = llm.invoke(res_embed_tojson_template.format(resume_text=pages_string))
 
+extrac_res_data = (response.content)
+
+
 # Print the extracted response (JSON format with detailed work experience information)
-print(response.content)
+
+print(extrac_res_data)
+
