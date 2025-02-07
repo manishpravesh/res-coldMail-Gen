@@ -1,11 +1,13 @@
 from langchain_groq import ChatGroq
 import os 
 os.environ['USER_AGENT'] = 'myagent'
+
 llm = ChatGroq(
     model="deepseek-r1-distill-llama-70b",
     groq_api_key='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'
     
 )
+
 url = "https://www.google.com/about/careers/applications/jobs/results/93855920110346950-senior-software-engineer-aiml-genai-google-cloud-ai"
 from langchain_community.document_loaders import WebBaseLoader
 loader = WebBaseLoader(url)
@@ -25,5 +27,6 @@ prompt_template = PromptTemplate.from_template(
 
 chain = prompt_template|llm
 response = chain.invoke(input={'page_data':page_data})
+job_data = response.content
 print(response.content)
 
