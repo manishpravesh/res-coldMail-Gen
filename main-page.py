@@ -1,19 +1,9 @@
+import streamlit as st
 import os
-import json
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.prompts import PromptTemplate
 from langchain_groq import ChatGroq  # Assuming this is a valid LLM (or use any other LLM of choice)
-
-# Set environment variable (if needed)
-os.environ['USER_AGENT'] = 'myagent'
-
-# Load PDF file
-file_path = r"C:\Users\INSP 15\Desktop\temp-pr\ml-Lang\resume-computer-engineering.pdf"
-pdf_loader = PyPDFLoader(file_path)
-pages = pdf_loader.load()  # Directly load all pages
-
-# Concatenate all pages into a single string
-pages_string = " ".join([page.page_content for page in pages])
+from WebDataScrape import job_data  # Assuming this module is available and correctly implemented
 
 # Initialize LLM (Groq or any LLM of choice)
 llm = ChatGroq(
@@ -22,8 +12,7 @@ llm = ChatGroq(
     # other params...
 )
 
-
-# Define the updated prompt template for extracting detailed work experience information
+# Define the prompt templates
 res_embed_tojson_template = PromptTemplate.from_template(
     """
     ### RESUME DATA:~
@@ -78,19 +67,6 @@ res_embed_tojson_template = PromptTemplate.from_template(
     """
 )
 
-# Generate response from LLM (use it to extract detailed work experience information)
-response = llm.invoke(res_embed_tojson_template.format(resume_text=pages_string))
-
-extrac_res_data = (response.content)
-
-
-# Print the extracted response (JSON format with detailed work experience information)
-
-# print(extrac_res_data)
-
-# coldMAIL
-from WebDataScrape import job_data
-
 fin_mail_template = PromptTemplate.from_template(
     """
     ### RESUME DATA:
@@ -137,48 +113,38 @@ fin_mail_template = PromptTemplate.from_template(
     }}
     """
 )
-fin_mail_template2 = PromptTemplate.from_template(
-    """
-    ### RESUME DATA:
-    {extrac_res_data}
-    
-    ### JOB DATA:
-    {job_data}
 
-    ### INSTRUCTIONS:
-    You are a cold email expert crafting a professional and concise message. Given the candidate's resume and the job description, write an effective cold email that aligns the candidate's qualifications, skills, and experience with the job requirements. Focus on matching technologies and skills, highlighting relevant achievements, and keeping the email to the point while remaining persuasive.
+# Streamlit app
+st.title("Cold Email Generator for Job Applications")
 
-    ### EMAIL FORMAT:
-    Subject: [Express the candidate's interest in the job role and their fit for the position, e.g., "Experienced [Job Title] Applicant for [Company Name] Role"]
+# Upload resume PDF
+uploaded_file = st.file_uploader("Upload your resume (PDF)", type="pdf")
 
-    Dear [Recipient's Name],
+# Input job posting link
+job_link = st.text_input("Enter the job posting link")
 
-    My name is [Candidate's Name], and I am very interested in the [Job Title] position at [Company Name]. With experience in [Relevant Field/Industry] and expertise in [Key Skills/Technologies], I believe I can contribute effectively to your team.
+if uploaded_file and job_link:
+    # Save the uploaded file temporarily
+    with open("temp_resume.pdf", "wb") as f:
+        f.write(uploaded_file.getbuffer())
 
-    In my recent role as [Current Role] at [Current Company Name], I [mention a brief key achievement or responsibility]. My skills in [Key Skills] and experience with [Tech Stack] are a strong match for the position you are looking to fill.
+    # Load PDF file
+    pdf_loader = PyPDFLoader("temp_resume.pdf")
+    pages = pdf_loader.load()  # Directly load all pages
 
-    I am particularly excited about the opportunity to work with [Company Name] because [Reason for Interest in the Company]. I have experience with [mention any matching technologies or relevant projects] that directly align with the requirements of this role.
+    # Concatenate all pages into a single string
+    pages_string = " ".join([page.page_content for page in pages])
 
-    I’ve attached my resume and would love the chance to discuss how my background can contribute to your team. Thank you for your time, and I look forward to hearing from you.
+    # Generate response from LLM (use it to extract detailed work experience information)
+    response = llm.invoke(res_embed_tojson_template.format(resume_text=pages_string))
+    extrac_res_data = response.content
 
-    Best regards,
-    [Candidate's Name]
-    [Candidate's Contact Information]
+    # Assuming job_data is fetched from the job_link
+    # job_data = fetch_job_data(job_link)  # Implement this function as needed
 
-    ### OUTPUT FORMAT:
-    {{
-        "subject": "A clear and concise subject line that specifies the purpose of the email, such as 'Experienced [Job Title] Applicant for [Company Name] Role'",
-        "body": "The body of the email as described above, concise and to the point"
-    }}
-    """
-)
+    # Generate cold email
+    mail = llm.invoke(fin_mail_template.format(extrac_res_data=extrac_res_data, job_data=job_data))
 
-mail = llm.invoke(fin_mail_template.format(extrac_res_data=extrac_res_data, job_data=job_data))
-mail2 = llm.invoke(fin_mail_template2.format(extrac_res_data=extrac_res_data, job_data=job_data))
-
-print(mail.content)
-
-print("-----------------------------------------------------------------------------------------------------")
-print(mail2.content)
-
-
+    # Display the generated email
+    st.subheader("Generated Cold Email")
+    st.write(mail.content)
